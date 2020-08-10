@@ -2,9 +2,11 @@
 """rpg."""
 import sys
 import os
+import keyboard
+import threading
 import time
 # import fabulous
-import keyboard
+# import logging
 
 # Global vars
 chars = {}
@@ -40,7 +42,7 @@ class Character(object):
 
     def save_to_json(self):
         """Save to JSON."""
-        f = open(os.path.join("chars", self.name + ".json"), "w")
+        f = open(os.path.join("chars", self.status["name"] + ".json"), "w")
         f.write(str(self))
         f.close()
 
@@ -91,17 +93,17 @@ def clear(confirm=True):
         _ = os.system('clear')
 
 
-def print_slow(text, rest=0.05, new_line=True, is_input=False, skippable=True):
+def print_slow(text, speed=0.05, new_line=True,
+               is_input=False, skippable=True):
     """Slowly print text across the screen."""
-    i = 1
-    for letter in text:
-        sys.stdout.write(letter)
+    for i in range(len(text)):
+        sys.stdout.write(text[i])
         sys.stdout.flush()
-        if skippable and keyboard.is_pressed("enter"):
-            sys.stdout.write(text[i:])
-            break
-        i += 1
-        time.sleep(rest)
+        if skippable:
+            rest(speed)
+        else:
+            time.sleep(speed)
+    sys.stdout.write(text[i+1:])
     if is_input:
         return input()
     if new_line:
@@ -123,6 +125,16 @@ def end():
     sys.exit()
 
 
+def commands():
+    """Commands."""
+    print("Avalible commands are:")
+    print("move <character> (row,column) "
+          "- move <character> to the spot at (row, column)")
+    print("inventory - checks your inventory")
+    print("end - ends the game")
+    print("help - displays this help page")
+
+
 def inventory():
     """Check inventory."""
     print("Inventory does not work yet.")
@@ -141,7 +153,7 @@ def interpret(text, active_grid):
     tokens = text.split(" ")
     commands = {"move": lambda: move(tokens, active_grid),
                 "inventory": lambda: inventory(),
-                "end": lambda: end()}
+                "end": lambda: end(), "help": lambda: commands()}
     if tokens[0] in commands.keys():
         commands[tokens[0]]()
     else:
@@ -157,12 +169,13 @@ def char_attributes():
     print("These will govern how your character "
           "performs at a variety of tasks.")
     print("You have 70 points to distribute among them.\n")
-    time.sleep(5)
-    print_slow("Please choose wisely.")
+    rest(5)
+    print_slow("Please choose wisely.\n")
     for attribute in attributes:
         while True:
             try:
-                user_attributes[attribute] = int(input("\nYour character will have this much " + attribute + ": "))
+                user_attributes[attribute] = int(input(
+                    "Your character will have this much " + attribute + ": "))
                 break
             except ValueError:
                 print("Each attribute must be an integer. Please try again.")
@@ -175,7 +188,7 @@ def display_attributes(attributes):
     """Display attributes."""
     for attribute in attributes:
         print("You have " + str(attributes[attribute]) + " " + attribute + ".")
-        time.sleep(0.1)
+        rest(0.1)
 
 
 def char_name():
@@ -189,20 +202,23 @@ def snarky_quit(message):
     """Quit the game unpon too many failed attempts to create a character."""
     clear(confirm=False)
     print_slow(message[:15] + "...\n")
-    time.sleep(3)
+    rest(3)
     print_slow("You know what?")
-    time.sleep(1)
+    rest(1)
     # actually I must have all day
     # since I spent time programming this message to work
     print_slow("I don't have all day.")
-    time.sleep(1)
+    rest(1)
     print_slow("Maybe this game just isn't for you.")
-    time.sleep(5)
+    rest(5)
     end()
 
 
 def char_creation():
     """Character creation."""
+    print_slow("Welcome to character creation.\n")
+    rest(1)
+    clear()
     confirm_message = [lambda: "Before we proceed, "
                        "please confirm if this is correct. Is it? ",
                        lambda: "So you are " + name + "? "]
@@ -211,14 +227,12 @@ def char_creation():
                     "I am just asking whether that is your name! "
                     "It isn't that hard of a question. "
                     "A mere yes or no will suffice."]
-    clear(confirm=False)
-    print_slow("Welcome to character creation.\n")
-    time.sleep(1)
     user_attributes = {}
     for i in range(2):
         confirm = "no"
         j = 0
         while confirm.lower() != "yes":
+            clear(confirm=False)
             if j == 10:
                 snarky_quit(fail_message[i])
             if i == 0:
@@ -238,7 +252,7 @@ def char_creation():
                     display_attributes(user_attributes)
                 confirm = print_slow(confirm_message[i](), is_input=True)
             j += 1
-    clear(confirm=False)
+    clear()
     # return the character the player created
     return Character({"name":  name,
                       "attributes": user_attributes,
@@ -251,24 +265,49 @@ def char_creation():
                       "talents": []})
 
 
-def main():
-    """Main."""
-    clear(confirm=False)
-    # introduce the game, its creator, and licenses
+def intro():
+    """Introduce the game, its creator, and licenses."""
     print_slow("Welcome to this text-based "
-               "RPG written in Python.\n", rest=0.1)
+               "RPG written in Python.\n", speed=0.1)
     print_slow("rpg code is licensed under GNU GPL v3.")
     print_slow("rpg Soundtrack by Dane Campbell "
                "is licensed under CC BY-NC-SA 4.0.")
-    time.sleep(1)
+    rest(1)
     clear()
+
+
+def world_build():
+    """World Build."""
     print_slow("Imagine a world...")
     clear()
+
+
+def detect_skip(event):
+    """Detect skip."""
+    while not event.isSet():
+        if keyboard.is_pressed("space"):
+            event.set()
+            break
+
+
+def rest(length):
+    """Rest."""
+    event = threading.Event()
+    thread = threading.Thread(target=detect_skip, args=(event,), daemon=True)
+    thread.start()
+    event.wait(length)
+
+
+def main():
+    """Main."""
+    clear(confirm=False)
+    intro()
+    world_build()
     player = char_creation()
     chars[player.status["name"]] = player
     player.save_to_json()
-    clear()
     grid1 = Grid([10, 10])
+    clear()
     grid1.display()
     while True:
         interpret(input("Please enter your command: "), grid1)
