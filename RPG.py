@@ -216,6 +216,10 @@ def snarky_quit(message):
 
 def char_creation():
     """Character creation."""
+    event = threading.Event()
+    thread = threading.Thread(target=play_music,
+                              args=(event, "theme.mid"), daemon=True)
+    thread.start()
     print_slow("Welcome to character creation.\n")
     rest(1)
     clear()
@@ -252,6 +256,7 @@ def char_creation():
                     display_attributes(user_attributes)
                 confirm = print_slow(confirm_message[i](), is_input=True)
             j += 1
+    event.wait()
     clear()
     # return the character the player created
     return Character({"name":  name,
@@ -267,19 +272,40 @@ def char_creation():
 
 def intro():
     """Introduce the game, its creator, and licenses."""
+    event = threading.Event()
+    event2 = threading.Event()
+    thread = threading.Thread(target=intro_text,
+                              args=(event,), daemon=True)
+    thread2 = threading.Thread(target=play_music,
+                               args=(event2, "intro.mid"), daemon=True)
+    thread.start()
+    thread2.start()
+    event2.wait()
+    clear()
+
+
+def intro_text(event):
+    """Intro text."""
+    game_credits()
+    world_build()
+    event.set()
+
+
+def game_credits():
+    """Introduce the game's creator and its licenses."""
     print_slow("Welcome to this text-based "
                "RPG written in Python.\n", speed=0.1)
     print_slow("rpg code is licensed under GNU GPL v3.")
     print_slow("rpg Soundtrack by Dane Campbell "
                "is licensed under CC BY-NC-SA 4.0.")
-    rest(1)
     clear()
 
 
 def world_build():
     """World Build."""
-    print_slow("Imagine a world...")
-    clear()
+    print_slow("You are tasked with adventuring "
+               "through these lands as you see fit.")
+    print_slow("Amoung these methods are arcana, might, and diplomacy.")
 
 
 def detect_skip(event):
@@ -298,11 +324,16 @@ def rest(length):
     event.wait(length)
 
 
+def play_music(event, music):
+    """Play music."""
+    os.system("timidity music/" + music + " > debug.log")
+    event.set()
+
+
 def main():
     """Main."""
     clear(confirm=False)
     intro()
-    world_build()
     player = char_creation()
     chars[player.status["name"]] = player
     player.save_to_json()
