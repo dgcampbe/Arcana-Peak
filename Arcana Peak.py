@@ -2,9 +2,9 @@
 """rpg."""
 import sys
 import os
-import keyboard
 import threading
 import time
+import keyboard
 # import fabulous
 # import logging
 
@@ -19,7 +19,7 @@ attributes = ["Strength",
               "Favor"]
 
 
-class Character(object):
+class Character():
     """Represent a character and all of their statisics."""
 
     def __init__(self, status, is_npc=False):
@@ -47,38 +47,33 @@ class Character(object):
         f.close()
 
 
-class Grid(object):
+class Grid():
     """A grid for the game world."""
 
-    def __init__(self, dimensions):
+    def __init__(self, dims):
 
-        self.dimensions = dimensions
-        self.squares = []
+        self.dims = dims
         self.entities = {}
         self.empty = "[ ]"
-
-        for i in range(self.dimensions[0]):
-
-            self.squares.append([self.empty, ]*self.dimensions[1])
+        self.squares = [[self.empty for i in range(self.dims[1])]
+                        for j in range(self.dims[0])]
 
     def display(self):
         """Display."""
         rep = "  "
-
-        for j in range(self.dimensions[1]):
+        for j in range(self.dims[1]):
             rep += " " + str(j) + " "
-
-        for i in range(self.dimensions[0]):
+        for i in range(self.dims[0]):
             rep += "\n" + str(i) + " "
-            for j in range(self.dimensions[1]):
+            for j in range(self.dims[1]):
                 rep += self.squares[i][j]
-
         print(rep)
 
     def move(self, char, loc):
         """Move."""
         if char in self.entities:
-            self.squares[self.entities[char][0]][self.entities[char][0]] = self.empty
+            entity = self.entities[char]
+            self.squares[entity[0]][entity[1]] = self.empty
         self.squares[loc[0]][loc[1]] = char.icon
         self.entities[char] = loc
 
@@ -96,8 +91,8 @@ def clear(confirm=True):
 def print_slow(text, speed=0.05, new_line=True,
                is_input=False, skippable=True):
     """Slowly print text across the screen."""
-    for i in range(len(text)):
-        sys.stdout.write(text[i])
+    for i, char in enumerate(text):
+        sys.stdout.write(char)
         sys.stdout.flush()
         if skippable:
             rest(speed)
@@ -115,7 +110,7 @@ def char_from_json(file):
     f = open(file)
     char = eval(f.read())
     f.close()
-    return Character(char["attributes"], char["talents"], char["status"])
+    return Character(char["status"])
 
 
 def end():
@@ -125,7 +120,7 @@ def end():
     sys.exit()
 
 
-def commands():
+def list_commands():
     """Commands."""
     print("Avalible commands are:")
     print("move <character> (row,column) "
@@ -153,7 +148,7 @@ def interpret(text, active_grid):
     tokens = text.split(" ")
     commands = {"move": lambda: move(tokens, active_grid),
                 "inventory": lambda: inventory(),
-                "end": lambda: end(), "help": lambda: commands()}
+                "end": lambda: end(), "help": lambda: list_commands()}
     if tokens[0] in commands.keys():
         commands[tokens[0]]()
     else:
@@ -293,10 +288,9 @@ def intro_text(event):
 
 def game_credits():
     """Introduce the game's creator and its licenses."""
-    print_slow("Welcome to this text-based "
-               "RPG written in Python.\n", speed=0.1)
-    print_slow("rpg code is licensed under GNU GPL v3.")
-    print_slow("rpg Soundtrack by Dane Campbell "
+    print_slow("Welcome to Arcana Peak: The rpg", speed=0.1)
+    print_slow("Arcana Peak: The rpg code is licensed under GNU GPL v3.")
+    print_slow("Arcana Peak: The rpg Soundtrack by Dane Campbell "
                "is licensed under CC BY-NC-SA 4.0.")
     clear()
 
@@ -347,4 +341,5 @@ def main():
     clear()
 
 
-main()
+if __name__ == "__main__":
+    main()
