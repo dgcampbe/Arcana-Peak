@@ -5,7 +5,6 @@ Arcana Peak: The rpg code is licensed under the [GNU GPL v3](https://www.gnu.org
 Arcana Peak: The rpg Soundtrack by Dane Campbell is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0).
 
 ### Dependencies
-Requires:
 * Cygwin
 * Cygwin Packages:
 	* timidity
@@ -17,48 +16,64 @@ Requires:
 ### Current Features:
 * Currently, there are no functioning mechanics.
 ### Planned Features:
-* Combat will be turn based.
-* During character creation you can choose a class
+* Turn-based combat.
+* As one plays, one may unlock multiple class trees.
 * Classes:
+
+	* Human
+		* Avaliable on character creation
 	* Arcanist
+		* Unlockable at Arcana Peak by reading "On Arcana"
+		* 
+	* Atrima
+		* "One who wields a bow"
+		* 
+	* Civil Servant
+		* Unlockable in a Human Kingdom
+		* 
 
 * Talents:
 
-	* Teacher - You create an aura granting +1 Int to nearby allies. (Int > 17)
-	* Diplomat - You reduce hostility of others. (Speech > 85)
-	* Student - You earn extra XP. (Int > 13)
-	* Meat Shield - You redirect 15% of damage dealt to allies. (Con > 17)
-	* Glass Canon - You have +50% incoming and outgoing damage. (Int > 17)
-	* Berserker - You deal more damage at lower health. (Con > 17)
-	* Vampire - You heal for 5% of all damage you deal. (Con > 17)
-	* Linguist - Your understanding of languages increases. (Int > 13, Speech > 75)
-	* Doctor - You create an aura that heals HP to nearby allies. (Thinking > 45, Wil > 13)
+	* Teaching - You grant +2 Int to party members. (Knw >= 18)
+	* Diplomacy - You reduce hostility of others. (Speech >= 16)
+	* Appreticeship - You earn +10% XP. (Knw >= 12)
+	* Meat Shield - You absorb 15% of damage dealt to party members. (Vit >= 18)
+	* Glass Canon - You have +50% incoming and outgoing damage. (Knw >= 18, Vit >= 12)
+	* Berserk - You deal up to +50% damage at lower health. (Vit >= 18)
+	* Vampirism - You heal for 5% of all damage you deal. (Vit >= 12)
+	* Linguistics - Your understanding of languages increases. (Knw >= 16, Speech >= 16)
+	* Medicine - You heal 10 HP/turn to party members. (Knw >= 14, Prs >= 14)
 
 * Spells:
-	* Coming soon...(tm)
+
+	* Spark
+		* Consume some tinder to alight a nearby flamable object.
+	* Slay
+		* Deal major damage to an enemy.
 
 * Attributes:
+
 	* Body Attributes:
-		* Strength (Str) - ability to possess
-		* Dexterity (Dex) - ability to move
-		* Constitution (Con) - ability to live
+		* Brawn (Brn) - ability to possess
+		* Dynamics (Dyn) - ability to move
+		* Vitality (Vit) - ability to live
 	* Mind Attributes:
-		* Intelligence (Int) - ability to know
-		* Wisdom (Wis) - ability to reason
-		* Will (Wil) - ability to change
+		* Knowledge (Knw) - ability to know
+		* Reason (Rsn) - ability to think
+		* Presence (Prs) - ability to influence
 	* Divine Attribute:
 		* Favor (Fav) - standing with the powers that be
 
 * Skills:
-	* Crafting = (3 * Dex) + Int + Wil
-	* Speech = (3 * Wil) + Wis + Int
-	* Spirit = Con + Wil  + Wis
-	* Endurance = (2 * Con) + Str
-	* Armor = Con + Str + Dex
-	* Perception = Wis + Wil
-	* Thinking = (2 * Wis) + Int + Wil
-	* Divinity = (3 * Fav) + Wis + Wil
-	* Technology = (3 * Int) + Wis + Wil
+
+	* Artistry = ((3 * Dyn) + Knw + Prs)/5
+	* Speech = ((3 * Prs) + Rsn + Kwn)/5
+	* Divinity = ((3 * Fav) + Rsn + Prs)/5
+	* Science = ((3 * Knw) + Rsn + Prs)/5
+	* Acrobatics = ((3 * Dyn) + Brn)/4
+	* Athletics = ((3 * Brn) + Dyn)/4
+	* Health = ((3 * Vit) + Brn + Dyn)/5
+	* Soul = ((3 * Prs) + Knw + Rsn)/5
 
 Potential Inspiration:
 * [5e Magic Items by Rarity](https://www.dandwiki.com/wiki/5e_Magic_Items_by_Rarity)

@@ -5,9 +5,21 @@ import os
 import threading
 import time
 import keyboard
-# import fabulous
 # import logging
+"""
+from blessings import Terminal
+from fabulous.color import bold, magenta, highlight_red
+t = Terminal()
+print(t.bold('Hi there!'))
+print(t.bold_red_on_bright_green('It hurts my eyes!'))
+with t.location(0, t.height - 1):
+    print('This is at the bottom.')
 
+print(bold(magenta('hello world')))
+print(highlight_red('DANGER WILL ROBINSON!'))
+print(bold('hello') + ' ' + magenta(' world'))
+assert(len(bold('test')) == 4)
+"""
 # Global vars
 chars = {}
 attributes = ["Strength",
