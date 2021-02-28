@@ -2,25 +2,13 @@
 """rpg."""
 import sys
 import os
-import threading
+import multiprocessing as mp
 import time
-import keyboard
+import blessed
 # import logging
-"""
-from blessings import Terminal
-from fabulous.color import bold, magenta, highlight_red
-t = Terminal()
-print(t.bold('Hi there!'))
-print(t.bold_red_on_bright_green('It hurts my eyes!'))
-with t.location(0, t.height - 1):
-    print('This is at the bottom.')
 
-print(bold(magenta('hello world')))
-print(highlight_red('DANGER WILL ROBINSON!'))
-print(bold('hello') + ' ' + magenta(' world'))
-assert(len(bold('test')) == 4)
-"""
 # Global vars
+term = blessed.Terminal()
 chars = {}
 attributes = ["Strength",
               "Dexterity",
@@ -32,7 +20,7 @@ attributes = ["Strength",
 
 
 class Character():
-    """Represent a character and all of their statisics."""
+    """Represent a character and all of their statistics."""
 
     def __init__(self, status, is_npc=False):
 
@@ -94,10 +82,7 @@ def clear(confirm=True):
     """Clear the console window after an optional user confirmation."""
     if confirm:
         input("\nPress enter to Continue.")
-    if os.name == 'nt':
-        _ = os.system('cls')
-    else:
-        _ = os.system('clear')
+    print(term.clear)
 
 
 def print_slow(text, speed=0.05, new_line=True,
@@ -107,10 +92,14 @@ def print_slow(text, speed=0.05, new_line=True,
         sys.stdout.write(char)
         sys.stdout.flush()
         if skippable:
-            rest(speed)
+            with term.cbreak():
+                val = term.inkey(timeout=speed)
+                if val == " ":
+                    break
         else:
             time.sleep(speed)
     sys.stdout.write(text[i+1:])
+    sys.stdout.flush()
     if is_input:
         return input()
     if new_line:
@@ -128,13 +117,12 @@ def char_from_json(file):
 def end():
     """End the game."""
     print("Game terminated.")
-    clear()
-    sys.exit()
+    print(term.exit_fullscreen)
 
 
 def list_commands():
     """Commands."""
-    print("Avalible commands are:")
+    print("Available commands are:")
     print("move <character> (row,column) "
           "- move <character> to the spot at (row, column)")
     print("inventory - checks your inventory")
@@ -176,7 +164,7 @@ def char_attributes():
     print("These will govern how your character "
           "performs at a variety of tasks.")
     print("You have 70 points to distribute among them.\n")
-    rest(5)
+    time.sleep(5)
     print_slow("Please choose wisely.\n")
     for attribute in attributes:
         while True:
@@ -195,7 +183,7 @@ def display_attributes(attributes):
     """Display attributes."""
     for attribute in attributes:
         print("You have " + str(attributes[attribute]) + " " + attribute + ".")
-        rest(0.1)
+        time.sleep(0.1)
 
 
 def char_name():
@@ -206,29 +194,27 @@ def char_name():
 
 
 def snarky_quit(message):
-    """Quit the game unpon too many failed attempts to create a character."""
+    """Quit the game upon too many failed attempts to create a character."""
     clear(confirm=False)
     print_slow(message[:15] + "...\n")
-    rest(3)
+    time.sleep(3)
     print_slow("You know what?")
-    rest(1)
+    time.sleep(1)
     # actually I must have all day
     # since I spent time programming this message to work
     print_slow("I don't have all day.")
-    rest(1)
+    time.sleep(1)
     print_slow("Maybe this game just isn't for you.")
-    rest(5)
+    time.sleep(5)
     end()
 
 
 def char_creation():
     """Character creation."""
-    event = threading.Event()
-    thread = threading.Thread(target=play_music,
-                              args=(event, "theme.mid"), daemon=True)
-    thread.start()
+    proc = mp.Process(target=play_music, args=("theme.mid",))
+    proc.start()
     print_slow("Welcome to character creation.\n")
-    rest(1)
+    time.sleep(1)
     clear()
     confirm_message = [lambda: "Before we proceed, "
                        "please confirm if this is correct. Is it? ",
@@ -263,7 +249,7 @@ def char_creation():
                     display_attributes(user_attributes)
                 confirm = print_slow(confirm_message[i](), is_input=True)
             j += 1
-    event.wait()
+    proc.join()
     clear()
     # return the character the player created
     return Character({"name":  name,
@@ -279,31 +265,27 @@ def char_creation():
 
 def intro():
     """Introduce the game, its creator, and licenses."""
-    event = threading.Event()
-    event2 = threading.Event()
-    thread = threading.Thread(target=intro_text,
-                              args=(event,), daemon=True)
-    thread2 = threading.Thread(target=play_music,
-                               args=(event2, "intro.mid"), daemon=True)
-    thread.start()
-    thread2.start()
-    event2.wait()
+    proc = mp.Process(target=play_music, args=("intro.mid",))
+    proc.start()
+    intro_text()
+    proc.join()
     clear()
 
 
-def intro_text(event):
+def intro_text():
     """Intro text."""
     game_credits()
     world_build()
-    event.set()
 
 
 def game_credits():
     """Introduce the game's creator and its licenses."""
+    print(term.white_on_black)
     print_slow("Welcome to Arcana Peak: The rpg", speed=0.1)
     print_slow("Arcana Peak: The rpg code is licensed under GNU GPL v3.")
     print_slow("Arcana Peak: The rpg Soundtrack by Dane Campbell "
                "is licensed under CC BY-NC-SA 4.0.")
+    print(term.normal)
     clear()
 
 
@@ -311,34 +293,27 @@ def world_build():
     """World Build."""
     print_slow("You are tasked with adventuring "
                "through these lands as you see fit.")
-    print_slow("Amoung these methods are arcana, might, and diplomacy.")
+    print_slow("Among the methods available to you are "
+               "arcana, might, and diplomacy.")
+    print()
+    print_slow("To the north,  the two Human Kingdoms do little but bicker.")
+    print_slow("To the south,  the reclusive Ek call the barren desert home.")
+    print_slow("In the central mountains, the Arcanists research...")
 
 
-def detect_skip(event):
-    """Detect skip."""
-    while not event.isSet():
-        if keyboard.is_pressed("space"):
-            event.set()
-            break
-
-
-def rest(length):
-    """Rest."""
-    event = threading.Event()
-    thread = threading.Thread(target=detect_skip, args=(event,), daemon=True)
-    thread.start()
-    event.wait(length)
-
-
-def play_music(event, music):
+def play_music(music):
     """Play music."""
-    os.system("timidity music/" + music + " > debug.log")
-    event.set()
+    if os.name == "nt":
+        os.system("fluidsynth -ni C:/soundfonts/default.sf2 music/"
+                  + music + " > debug.log")
+    else:
+        os.system("fluidsynth -ni /usr/share/sounds/sf2/FluidR3_GM.sf2 music/"
+                  + music + " > debug.log")
 
 
 def main():
     """Main."""
-    clear(confirm=False)
+    print(term.enter_fullscreen)
     intro()
     player = char_creation()
     chars[player.status["name"]] = player
