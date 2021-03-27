@@ -2,12 +2,12 @@
 ## A simple text-based RPG set in a fantasy world made in Python.
 ### Licensing:
 * Arcana Peak: The RPG code is licensed under the [GNU GPL v3](https://www.gnu.org/licenses/quick-guide-gplv3.html).
-* Arcana Peak: The RPG Soundtrack by Dane Campbell is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0).
+* Arcana Peak: The RPG Soundtrack by Dane Campbell is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0)
 
 ### Dependencies:
-*  [fluidsynth](https://github.com/FluidSynth/fluidsynth)
-* Python 3
+* Python 3 (Developed using Python 3.8, but should work on earlier versions)
 	* [blessed](https://pypi.org/project/blessed/)
+	* [pygame](https://pypi.org/project/pygame/)
 
 ### Current Features:
 * Currently, there are no functioning mechanics.

@@ -1,10 +1,10 @@
 from setuptools import setup
 
 setup(
-    name="",
+    name="arcana_peak",
     version="0.1",
-    description="",
-    packages=["fabulous", "keyboard"],
+    description="A text-based RPG",
+    packages=["blessed", "pygame"],
     author="Dane Campbell",
     author_email="dgcampbe@gmail.com",
     keywords="",
