@@ -2,6 +2,7 @@
 """Arcana Peak."""
 import sys
 import os
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import time
 import cmd
 import json
@@ -29,8 +30,8 @@ class Character():
     def __init__(self, status, is_npc=False):
 
         self.status = status
-        print("Character spawned. Please kindly welcome " +
-              self.status["name"] + " into the world!")
+        print_slow("Character spawned. Please kindly welcome " +
+                   self.status["name"] + " into the world!")
 
     def __str__(self):
         """String."""
@@ -48,14 +49,14 @@ class Character():
         file.close()
 
     def char_from_json(self, file):
-        """Import a character from JSON."""
+        """Import a character from a JSON file."""
         file = open(file)
         char = json.load(file)
         file.close()
         self.status = char
 
     def move(self, grid, loc):
-        """Move character."""
+        """Move the character to the desired location on the given grid."""
         grid.move(self, loc)
 
 
@@ -82,7 +83,21 @@ class Grid():
         return rep
 
     def move(self, char, loc):
-        """Move."""
+        """
+        Move a character on the grid.
+
+        Parameters
+        ----------
+        char : Character
+            This is the character that will be moved.
+        loc : Tuple
+            This is the location to which the character will be moved.
+
+        Returns
+        -------
+        None.
+
+        """
         if char in self.entities:
             entity = self.entities[char]
             self.squares[entity[0]][entity[1]] = self.empty
@@ -93,14 +108,39 @@ class Grid():
 def clear(confirm=True):
     """Clear the console window after an optional user confirmation."""
     if confirm:
-        input("\nPress enter to Continue.")
+        input("\nPress enter to continue.")
     print(term.clear)
 
 
-def print_slow(text, speed=0.05, new_line=True,
+def print_slow(text, speed=0.025, new_line=True,
                is_input=False, skippable=True):
-    """Slowly print text across the screen."""
+    """
+    Slowly print text across the screen, mimicking manually typed text.
+
+    Parameters
+    ----------
+    text: str
+        This is the text that will be printed.
+    speed: float, optional
+        This is the amount of time, in seconds, spent asleep between characters
+        with extra time spent on certain punctuation and at the end.
+        The default is 0.025
+    new_line: bool, optional
+        This determines if the printing should begin on a new line.
+        The default is True.
+    is_input: bool, optional
+        determines if the slow print behaves like the input function,
+        except with the prompt being given in a slowly printed fashion.
+        The default is False.
+    skippable: bool, optional
+        determinies if the player is able to skip the rest of slow
+        printing by pressing space.
+        The default is True.
+
+    """
     for i, char in enumerate(text):
+        if char in [" ", ",", ".", ":", ";", "!", "?"]:
+            time.sleep(speed*3)
         sys.stdout.write(char)
         sys.stdout.flush()
         if skippable:
@@ -112,6 +152,7 @@ def print_slow(text, speed=0.05, new_line=True,
                     break
         else:
             time.sleep(speed)
+    time.sleep(speed*10)
     if is_input:
         return input()
     if new_line:
@@ -122,14 +163,14 @@ def end():
     """End the game."""
     print("Game terminated.")
     print(term.exit_fullscreen)
+    sys.exit()
 
 
 def display_attributes(user_attributes):
     """Display attributes."""
     for attribute in user_attributes:
-        print("You have " + str(user_attributes[attribute]) +
-              " " + attribute + ".")
-        time.sleep(0.1)
+        print_slow("You have " + str(user_attributes[attribute]) +
+                   " " + attribute + ".")
 
 
 def snarky_quit(message):
@@ -155,18 +196,15 @@ def char_attributes():
                "performs at a variety of tasks.")
     print_slow("You have 70 points to distribute among the attributes:")
     for attribute in attributes:
-        print(attribute)
-        time.sleep(0.5)
+        print_slow(attribute)
     time.sleep(1)
     print_slow("Please choose wisely.\n")
     time.sleep(1)
     user_attributes = {}
     confirm = ""
     attempts = 0
+    allowed_failures = 5
     while confirm.lower() != "yes":
-        if attempts == 10:
-            snarky_quit("That was a yes or no question, silly! "
-                        "I will ask you again.")
         for attribute in attributes:
             while True:
                 try:
@@ -177,12 +215,18 @@ def char_attributes():
                           "Please try again.")
         clear()
         display_attributes(user_attributes)
-        confirm = input("Before we proceed, please "
-                        "confirm if this information is correct. Is it? ")
+        confirm = print_slow("Before we proceed, please "
+                             "confirm if this information is correct. Is it? ",
+                             is_input=True)
+        if attempts == allowed_failures:
+            snarky_quit("That was a yes or no question, silly! "
+                        "I will ask you again.")
+            break
         if confirm.lower() not in ("yes", "no"):
-            print("That was a yes or no question, silly! "
-                  "I will ask you again.")
-        clear(confirm=False)
+            clear(confirm=False)
+            print_slow("That was a yes or no question, silly! "
+                       "I will ask you again.")
+            attempts += 1
     return user_attributes
 
 
@@ -190,24 +234,34 @@ def char_name():
     """Allow the player to choose a name."""
     confirm = ""
     attempts = 0
+    allowed_failures = 5
     while confirm.lower() != "yes":
-        if attempts == 10:
+        name = print_slow("Now I must ask, who are you? ", is_input=True)
+        confirm = print_slow("So you are " + name + "? ", is_input=True)
+        if attempts == allowed_failures:
             snarky_quit("I am just asking whether that is your name! "
                         "It isn't that hard of a question. "
                         "A mere yes or no will suffice.")
-        name = input("Now I must ask, who are you? ")
-        confirm = input("So you are " + name + "? ")
+            break
         if confirm.lower() not in ("yes", "no"):
-            print("I am just asking whether that is your name! "
-                  "It isn't that hard of a question. "
-                  "A mere yes or no will suffice.")
+            clear(confirm=False)
+            print_slow("I am just asking whether that is your name! "
+                       "It isn't that hard of a question. "
+                       "A mere yes or no will suffice.")
             attempts += 1
-        clear(confirm=False)
     return name
 
 
 def char_creation():
-    """Allow the player to create a character."""
+    """
+    Allow the player to create a character.
+
+    Returns
+    -------
+    Character
+        The character is the character that the player created.
+
+    """
     play_music("theme.mid")
     user_attributes = char_attributes()
     name = char_name()
@@ -239,7 +293,7 @@ def intro_text():
 def game_credits():
     """Introduce the game, game's creator, and its licenses."""
     print(term.white_on_black)
-    print_slow("Welcome to Arcana Peak: The RPG", speed=0.1)
+    print_slow("Welcome to Arcana Peak: The RPG")
     print_slow("Arcana Peak: The RPG code is licensed under GNU GPL v3.")
     print_slow("Arcana Peak: The RPG Soundtrack by Dane Campbell "
                "is licensed under CC BY-NC-SA 4.0.")
@@ -279,8 +333,8 @@ class GameShell(cmd.Cmd):
         """Move a character."""
         clear(confirm=False)
         args = arg.split()
-        if args[1] in chars:
-            args[1].move(self.grid, args[2].split(", "))
+        if args[0] in chars:
+            chars[args[0]].move(self.grid, tuple(map(int, args[1].split(","))))
         else:
             print("Sorry, that character does not exist.")
 
