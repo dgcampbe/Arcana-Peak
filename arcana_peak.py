@@ -1,35 +1,28 @@
 #!/usr/bin/env python
 """Arcana Peak."""
-import sys
-import os
-os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
-import time
-import cmd
 import json
 import logging
+import os
+import sys
+import time
 import blessed
+import cmd2
+
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import pygame
-# import art
 
 # Global vars
 term = blessed.Terminal()
 chars = {}
-attributes = ["Strength",
-              "Dexterity",
-              "Constitution",
-              "Intelligence",
-              "Wisdom",
-              "Will",
-              "Favor"]
 logging.basicConfig(filename="debug.log", level=logging.DEBUG)
 
 
-class Character():
-    """Represent a character and all of their statistics."""
+class Character:
+    """Represent a character and its status."""
 
     def __init__(self, status, is_npc=False):
-
         self.status = status
+        self.is_npc = is_npc
         print_slow("Character spawned. Please kindly welcome " +
                    self.status["name"] + " into the world!")
 
@@ -43,16 +36,14 @@ class Character():
         return "[O]"
 
     def save_to_json(self):
-        """Save to JSON."""
-        file = open(os.path.join("chars", self.status["name"] + ".json"), "w")
-        file.write(json.dumps(self.status))
-        file.close()
+        """Save to a JSON file."""
+        with open(os.path.join("chars", self.status["name"] + ".json"), "w") as file:
+            file.write(json.dumps(self.status))
 
     def char_from_json(self, file):
         """Import a character from a JSON file."""
-        file = open(file)
-        char = json.load(file)
-        file.close()
+        with open(file) as file:
+            char = json.load(file)
         self.status = char
 
     def move(self, grid, loc):
@@ -60,7 +51,7 @@ class Character():
         grid.move(self, loc)
 
 
-class Grid():
+class Grid:  # Will be replaced with a hex grid.
     """A grid for the game world."""
 
     def __init__(self, dims):
@@ -68,8 +59,7 @@ class Grid():
         self.dims = dims
         self.entities = {}
         self.empty = "[ ]"
-        self.squares = [[self.empty for i in range(self.dims[1])]
-                        for j in range(self.dims[0])]
+        self.squares = [[self.empty] * self.dims[1] for i in range(self.dims[0])]
 
     def __str__(self):
         """String."""
@@ -82,16 +72,18 @@ class Grid():
                 rep += self.squares[i][j]
         return rep
 
-    def move(self, char, loc):
+    def move(self, char, loc, place=True):
         """
         Move a character on the grid.
 
         Parameters
         ----------
         char : Character
-            This is the character that will be moved.
+            Character that will be moved.
         loc : Tuple
-            This is the location to which the character will be moved.
+            Location to which the character will be moved.
+        place : bool, optional
+            Determines if the character is placed if it isn't already placed.
 
         Returns
         -------
@@ -99,10 +91,11 @@ class Grid():
 
         """
         if char in self.entities:
-            entity = self.entities[char]
-            self.squares[entity[0]][entity[1]] = self.empty
-        self.squares[loc[0]][loc[1]] = char.icon
-        self.entities[char] = loc
+            current_loc = self.entities[char]
+            self.squares[current_loc[0]][current_loc[1]] = self.empty
+        if char in self.entities or place:
+            self.squares[loc[0]][loc[1]] = char.icon
+            self.entities[char] = loc
 
 
 def clear(confirm=True):
@@ -112,47 +105,47 @@ def clear(confirm=True):
     print(term.clear)
 
 
-def print_slow(text, speed=0.025, new_line=True,
-               is_input=False, skippable=True):
+def print_slow(text="", speed=0.025, new_line=True,
+               is_input=False, skip=True):
     """
     Slowly print text across the screen, mimicking manually typed text.
 
     Parameters
     ----------
     text: str
-        This is the text that will be printed.
+        The text that will be printed.
     speed: float, optional
-        This is the amount of time, in seconds, spent asleep between characters
+        The amount of time, in seconds, spent asleep between characters
         with extra time spent on certain punctuation and at the end.
         The default is 0.025
     new_line: bool, optional
-        This determines if the printing should begin on a new line.
+        Determines if the printing should begin on a new line.
         The default is True.
     is_input: bool, optional
-        determines if the slow print behaves like the input function,
+        Determines if the slow print behaves like the input function,
         except with the prompt being given in a slowly printed fashion.
         The default is False.
-    skippable: bool, optional
-        determinies if the player is able to skip the rest of slow
+    skip: bool, optional
+        Determines if the player is able to skip the rest of slow
         printing by pressing space.
         The default is True.
 
     """
     for i, char in enumerate(text):
         if char in [" ", ",", ".", ":", ";", "!", "?"]:
-            time.sleep(speed*3)
+            time.sleep(speed * 3)
         sys.stdout.write(char)
         sys.stdout.flush()
-        if skippable:
+        if skip:
             with term.cbreak():
                 val = term.inkey(timeout=speed)
                 if val == " ":
-                    sys.stdout.write(text[i+1:])
+                    sys.stdout.write(text[i + 1:])
                     sys.stdout.flush()
                     break
         else:
             time.sleep(speed)
-    time.sleep(speed*10)
+    time.sleep(speed * 10)
     if is_input:
         return input()
     if new_line:
@@ -166,13 +159,6 @@ def end():
     sys.exit()
 
 
-def display_attributes(user_attributes):
-    """Display attributes."""
-    for attribute in user_attributes:
-        print_slow("You have " + str(user_attributes[attribute]) +
-                   " " + attribute + ".")
-
-
 def snarky_quit(message):
     """Quit the game upon too many failed attempts to create a character."""
     clear(confirm=False)
@@ -180,7 +166,7 @@ def snarky_quit(message):
     time.sleep(3)
     print_slow("You know what?")
     time.sleep(1)
-    # actually I must have all day since I spent time programming this message
+    # actually I have all day, I had the time to program this message
     print_slow("I don't have all day.")
     time.sleep(1)
     print_slow("Maybe this game just isn't for you.")
@@ -188,67 +174,26 @@ def snarky_quit(message):
     end()
 
 
-def char_attributes():
-    """Allow the player to assign attributes."""
-    print_slow("Welcome to attribute assignment.\n")
-    time.sleep(1)
-    print_slow("Attributes govern how your character "
-               "performs at a variety of tasks.")
-    print_slow("You have 70 points to distribute among the attributes:")
-    for attribute in attributes:
-        print_slow(attribute)
-    time.sleep(1)
-    print_slow("Please choose wisely.\n")
-    time.sleep(1)
-    user_attributes = {}
-    confirm = ""
-    attempts = 0
-    allowed_failures = 5
-    while confirm.lower() != "yes":
-        for attribute in attributes:
-            while True:
-                try:
-                    user_attributes[attribute] = int(input(attribute + "\t: "))
-                    break
-                except ValueError:
-                    print("Each attribute must be an integer. "
-                          "Please try again.")
-        clear()
-        display_attributes(user_attributes)
-        confirm = print_slow("Before we proceed, please "
-                             "confirm if this information is correct. Is it? ",
-                             is_input=True)
-        if attempts == allowed_failures:
-            snarky_quit("That was a yes or no question, silly! "
-                        "I will ask you again.")
-            break
-        if confirm.lower() not in ("yes", "no"):
-            clear(confirm=False)
-            print_slow("That was a yes or no question, silly! "
-                       "I will ask you again.")
-            attempts += 1
-    return user_attributes
-
-
 def char_name():
     """Allow the player to choose a name."""
-    confirm = ""
+    clear(confirm=False)
+    failure_text = """I am just asking whether that is your name!
+    It really isn't that hard of a question.
+    A mere yes or no will suffice."""
+    confirm = "no"
     attempts = 0
     allowed_failures = 5
+    name = None
     while confirm.lower() != "yes":
+        if attempts == allowed_failures:
+            snarky_quit(failure_text)
+            break
         name = print_slow("Now I must ask, who are you? ", is_input=True)
         confirm = print_slow("So you are " + name + "? ", is_input=True)
-        if attempts == allowed_failures:
-            snarky_quit("I am just asking whether that is your name! "
-                        "It isn't that hard of a question. "
-                        "A mere yes or no will suffice.")
-            break
         if confirm.lower() not in ("yes", "no"):
-            clear(confirm=False)
-            print_slow("I am just asking whether that is your name! "
-                       "It isn't that hard of a question. "
-                       "A mere yes or no will suffice.")
+            print_slow(failure_text)
             attempts += 1
+        clear(confirm=False)
     return name
 
 
@@ -259,15 +204,16 @@ def char_creation():
     Returns
     -------
     Character
-        The character is the character that the player created.
+        The character that the player created.
 
     """
     play_music("theme.mid")
-    user_attributes = char_attributes()
+    print_slow("Welcome to character creation.")
+    clear()
     name = char_name()
     # return the character the player created
     return Character({"name": name,
-                      "attributes": user_attributes,
+                      "attributes": None,
                       "xp": None,
                       "hp": None,
                       "inventory": [],
@@ -291,14 +237,14 @@ def intro_text():
 
 
 def game_credits():
-    """Introduce the game, game's creator, and its licenses."""
-    print(term.white_on_black)
+    """Introduce the game, game's creator, and licenses."""
     print_slow("Welcome to Arcana Peak: The RPG")
-    print_slow("Arcana Peak: The RPG code is licensed under GNU GPL v3.")
+    print_slow("Arcana Peak: The RPG code is licensed under "
+               f"{term.link('https://www.gnu.org/licenses/gpl-3.0.en.html', 'GNU GPL v3')}.")
     print_slow("Arcana Peak: The RPG Soundtrack by Dane Campbell "
-               "is licensed under CC BY-NC-SA 4.0.")
+               "is licensed under "
+               f"{term.link('https://creativecommons.org/licenses/by-nc-sa/4.0/', 'CC BY-NC-SA 4.0')}.")
     clear()
-    print(term.normal)
 
 
 def world_build():
@@ -307,46 +253,78 @@ def world_build():
                "through these lands as you see fit.")
     print_slow("Among the methods available to you are "
                "arcana, might, and diplomacy.")
-    print()
+    print_slow()
     print_slow("To the north, the two Human Kingdoms do little but bicker.")
     print_slow("To the south, the reclusive Ek call the barren desert home.")
     print_slow("In the central mountains, the Arcanists research...")
 
 
 def play_music(music):
-    """Play music."""
+    """
+    Play a music file.
+
+    Parameters
+    ---------
+    music: str
+        The name of the music file to be played.
+
+    """
     pygame.mixer.music.load("music/" + music)
     pygame.mixer.music.play()
 
 
-class GameShell(cmd.Cmd):
+parser = cmd2.Cmd2ArgumentParser()
+parser.add_argument("char", help="Character that will be moved.")
+parser.add_argument("loc", help="Location to move to.")
+parser2 = cmd2.Cmd2ArgumentParser()
+parser2.add_argument("char", help="Character whose inventory to check.")
+
+
+class GameShell(cmd2.Cmd):
     """Game shell."""
 
     def __init__(self, grid):
         super().__init__()
         self.intro = "Type help or ? to list commands."
-        self.prompt = str(grid) + "\nState your wish: "
         self.file = None
         self.grid = grid
+        self._set_prompt()
+        self.register_postcmd_hook(self.postcmd_hook_method)
 
-    def do_move(self, arg):
-        """Move a character."""
-        clear(confirm=False)
-        args = arg.split()
-        if args[0] in chars:
-            chars[args[0]].move(self.grid, tuple(map(int, args[1].split(","))))
+    def postcmd_hook_method(self, data: cmd2.plugin.PostcommandData) -> cmd2.plugin.PostcommandData:
+        """
+
+        Parameters
+        ----------
+        data
+
+        Returns
+        -------
+
+        """
+        clear()
+        self._set_prompt()
+        return data
+
+    def _set_prompt(self):
+        """Set prompt."""
+        self.prompt = str(self.grid) + "\nState your wish: "
+
+    @cmd2.decorators.with_argparser(parser)
+    def do_move(self, opts):
+        """Move a character to a location on the grid."""
+        if opts.char in chars:
+            chars[opts.char].move(self.grid, tuple(map(int, opts.loc.split(","))))
         else:
             print("Sorry, that character does not exist.")
 
-    def do_inventory(self, arg):
+    @cmd2.decorators.with_argparser(parser2)
+    def do_inventory(self, opts):
         """Check inventory."""
-        clear(confirm=False)
-        # args = arg.split()
-        print("Inventory does not work yet.")
-
-    def do_quit(self, arg):
-        """Quit the prompt."""
-        return True
+        if opts.char in chars:
+            print("Inventory does not work yet.")
+        else:
+            print("Sorry, that character does not exist.")
 
 
 def main():
@@ -360,7 +338,7 @@ def main():
     grid1 = Grid([10, 10])
     clear()
     GameShell(grid1).cmdloop()
-    clear()
+    end()
 
 
 if __name__ == "__main__":
