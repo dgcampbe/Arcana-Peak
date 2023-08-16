@@ -1,4 +1,4 @@
-setuptools~=52.0.0
+setuptools~=68.1.0
 blessed~=1.18.0
 cmd2~=2.4.3
 pygame~=2.0.1
