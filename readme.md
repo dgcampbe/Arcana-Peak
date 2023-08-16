@@ -14,7 +14,10 @@
 * Currently, there are no functioning mechanics.
 
 ### Planned Features:
-* Turn-based combat.
+* Character voices use instruments like in Don't Starve
+* Single save file in json format
+* Munchkin method for character creation
+* Turn-based combat
 * As one plays, one may unlock multiple class trees.
 * Classes:
 	* Arcanist
@@ -49,6 +52,7 @@
 	* Presence
 		* Speech
 			* Diplomacy
+
 ### Potential Inspiration:
 * [5e Magic Items by Rarity](https://dandwiki.com/wiki/5e_Magic_Items_by_Rarity)
 * [Homebrew](https://dndbeyond.com/homebrew)
