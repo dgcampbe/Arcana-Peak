@@ -5,8 +5,8 @@ setup(
     version="0.1",
     description="A text-based RPG",
     packages=["blessed", "pygame"],
-    author="Dane Campbell",
-    author_email="dgcampbe@gmail.com",
+    author="Kat Campbell",
+    author_email="dgcampbe@protonmail.com",
     keywords="",
     # url="http://example.com/HelloWorld/",
     # project_urls={
